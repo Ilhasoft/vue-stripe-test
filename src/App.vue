@@ -1,32 +1,61 @@
+/* eslint-disable space-before-function-paren */
 <template>
-  <div id="app">
-    <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div>
-    <router-view/>
+<div>
+  <div id="test">
   </div>
+    <button ref="buttonTOp" @click="submit">Generate token</button>
+
+</div>
 </template>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-}
+<script>
+// import { StripeElementCard } from '@vue-stripe/vue-stripe'
+import axios from 'axios'
+export default {
+  components: {
+    // StripeElementCard
+  },
+  data () {
+    this.pulishableKey = process.env.VUE_APP_STRIPE_PUBLISHABLE_KEY
+    return {
+      token: null,
+      clientSecret: null,
+      count: 0,
+      cardSaved: null
+    }
+  },
+  mounted () {
+    axios({
+      method: 'POST',
+      url: 'https://922b15145e0a.ngrok.io/create-setup-intent',
+      headers: {
+        'Access-Control-Allow-Origin': '*'
+      }
+    }).then(res => {
+      this.clientSecret = res.data.client_secret
+      const elements = this.$stripe.elements()
 
-#nav {
-  padding: 30px;
-}
+      this.cardSaved = elements.create('card', {})
+      this.cardSaved.mount('#test')
 
-#nav a {
-  font-weight: bold;
-  color: #2c3e50;
-}
+      console.log(this.clientSecret)
+    }).catch(err => console.log(err))
+  },
+  methods: {
+    submit () {
+      this.$refs.buttonTOp.disabled = true
 
-#nav a.router-link-exact-active {
-  color: #42b983;
+      this.$stripe.confirmCardSetup(this.clientSecret, {
+        payment_method: {
+          card: this.cardSaved
+        }
+      })
+    },
+    tokenCreated (token) {
+      console.log(token)
+      // handle the token
+      // send it to your server
+    }
+  }
 }
-</style>
+</script>
